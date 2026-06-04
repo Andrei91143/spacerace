@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Cold War Space Race - by Andrei Benedict A. Rodriguez</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #001100;
+    color: #39ff14;
+    font-family: 'Share Tech Mono', monospace;
+    user-select: none;
+    overflow: hidden;
+  }
+  #container {
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(ellipse at center, #003300 0%, #000800 65%, #000300 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  h1, h2, h3 {
+    text-shadow:
+      0 0 4px #39ff14,
+      0 0 10px #39ff14,
+      0 0 20px #22cc00;
+  }
+  button {
+    background: transparent;
+    border: 2px solid #39ff14;
+    color: #39ff14;
+    font-size: 1.2em;
+    font-family: 'Share Tech Mono', monospace;
+    padding: 12px 24px;
+    margin: 12px;
+    cursor: pointer;
+    text-shadow:
+      0 0 3px #39ff14,
+      0 0 10px #39ff14;
+    transition: background 0.3s, color 0.3s;
+  }
+  button:hover, button:focus {
+    background: #39ff14;
+    color: #001100;
+    outline: none;
+  }
+  #mainMenu, #historyBriefing, #timeline, #gameScreen, #missionFailed, #victoryScreen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: brightness(0.4);
+  }
+  #mainMenu.active, #historyBriefing.active, #timeline.active, #gameScreen.active, #missionFailed.active, #victoryScreen.active {
+    display: flex;
+  }
+  #gameCanvas {
+    background: radial-gradient(ellipse at center, #003300 20%, #000800 90%);
+    border: 3px solid #39ff14;
+    box-shadow:
+      0 0 15px #39ff14,
+      inset 0 0 8px #22cc00;
+    display: block;
+    margin: 0 auto;
+  }
+  /* HUD at top */
+  #hud {
+    position: absolute;
+    top: 12px;
+    width: 100%;
+    max-width: 700px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #39ff14;
+    font-size: 1.1em;
+    text-align: center;
+    text-shadow:
+      0 0 5px #39ff14,
+      0 0 10px #39ff14;
+    letter-spacing: 2px;
+    user-select: none;
+    font-weight: 700;
+  }
+  /* Radar grid lines - behind game canvas */
+  #radarGrid {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  /* glowing text blocks */
+  .glow-text {
+    text-shadow:
+      0 0 5px #39ff14,
+      0 0 10px #22cc00,
+      0 0 20px #39ff14,
+      0 0 30px #22cc00;
+  }
+  /* scroll content for briefing and timeline */
+  #historyText, #timelineText {
+    max-width: 700px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 12px;
+    border: 2px solid #39ff14;
+    box-shadow:
+      0 0 15px #39ff14;
+    background: #001100dd;
+    line-height: 1.4em;
+  }
+  /* Controls Instruction */
+  #controlsInfo {
+    margin-top: 8px;
+    font-size: 0.9em;
+    color: #22cc00;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <!-- Main Menu -->
+  <section id="mainMenu" class="active" role="menu" aria-label="Main Menu">
+    <h1 class="glow-text">Cold War Space Race by Andrei R</h1>
+    <button id="startSimBtn" aria-label="Start the simulation">Start Sim</button>
+    <button id="historyBriefingBtn" aria-label="Open the history">Fast History about Space
+    <button id="timelineBtn" aria-label="Open the timeline">Timeline of Space Race</button>
+  </section>
+  <!-- History -->
+  <section id="historyBriefing" role="document" aria-label="History Briefing">
+    <h2 class="glow-text">History of Cold War</h2>
+    <div id="historyText" tabindex="0">
+      <p>The Space Race was a big competition between the US and the Soviet Union from 1957 to 1969. It started when the Soviets shocked everyone by launching <strong>Sputnik 1</strong>, the first man-made satellite, which started a huge rivalry.</p>
+      <p>Both countries raced to hit major goals in space exploration. For example, the USSR sent the first guy into space, Yuri Gagarin, in 1961. Then in 1969, the Americans won the race by landing the first people on the Moon during the Apollo 11 mission.</p>
+      <p>This competition made science and technology advance really fast. It was also a big way for both sides to prove that their government and way of life were better during the Cold War.</p>
+      <p>Your mission is to safely fly a space capsule through dangerous space junk, just like the early astronauts had to do, and land on the Moon to win the race for your country.</p>
+    </div>
+    <button id="backFromHistory" aria-label="Return to main menu">Return Back to Menu</button>
+  </section>
+  <!-- Timeline -->
+  <section id="timeline" role="document" aria-label="Timeline">
+    <h2 class="glow-text">Space Race Timeline</h2>
+    <div id="timelineText" tabindex="0">
+      <ul>
+        <li><strong>1957:</strong> USSR launches Sputnik 1, first artificial satellite.</li>
+        <li><strong>1961:</strong> Yuri Gagarin (USSR) becomes first human in space.</li>
+        <li><strong>1962:</strong> John Glenn (USA) orbits Earth.</li>
+        <li><strong>1965:</strong> First spacewalk by Alexei Leonov (USSR).</li>
+        <li><strong>1966:</strong> Luna 9 (USSR) first soft lunar landing.</li>
+        <li><strong>1969:</strong> Apollo 11 (USA) lands first humans on the Moon.</li>
+      </ul>
+    </div>
+    <button id="backFromTimeline" aria-label="Return to main menu">Return Back to Menu</button>
+  </section>
+  <!-- Game Screen -->
+  <section id="gameScreen" aria-label="Space Race Simulation" role="main">
+    <div id="hud" aria-live="polite" aria-atomic="true">
+      <span id="distanceText">Distance Flown: 0 KM</span> | 
+      <span id="yearText">Year: 1957</span>
+    </div>
+    <canvas id="gameCanvas" width="400" height="600" role="img" aria-label="Game canvas showing rocket and obstacles"></canvas>
+    <div id="controlsInfo">Controls: Use A & D keys to steer left and right</div>
+  </section>
+  <!-- Mission Failed -->
+  <section id="missionFailed" role="alertdialog" aria-modal="true" aria-labelledby="failedTitle">
+    <h2 id="failedTitle" class="glow-text">Mission Failed (This is an easy game bro.)</h2>
+    <p>Your capsule was destroyed by space debris.</p>
+    <button id="retryBtn" aria-label="Retry to main menu">Retry</button>
+    <button id="quitBtn" aria-label="Quit to main menu">Quit to Menu (Only losers do this)</button>
+  </section>
+  <!-- Victory Screen -->
+  <section id="victoryScreen" role="alertdialog" aria-modal="true" aria-labelledby="victoryTitle">
+    <h2 id="victoryTitle" class="glow-text">MISSION SUCCESS</h2>
+    <p id="victoryText"></p>
+    <button id="victoryQuitBtn" aria-label="Return to main menu">Return to Menu</button>
+  </section>
+</div>
+<script>
+(() => {
+  'use strict';
+
+  // DOM references
+  const mainMenu = document.getElementById('mainMenu');
+  const startSimBtn = document.getElementById('startSimBtn');
+  const historyBriefing = document.getElementById('historyBriefing');
+  const historyBriefingBtn = document.getElementById('historyBriefingBtn');
+  const timeline = document.getElementById('timeline');
+  const timelineBtn = document.getElementById('timelineBtn');
+  const backFromHistory = document.getElementById('backFromHistory');
+  const backFromTimeline = document.getElementById('backFromTimeline');
+  const gameScreen = document.getElementById('gameScreen');
+  const missionFailed = document.getElementById('missionFailed');
+  const retryBtn = document.getElementById('retryBtn');
+  const quitBtn = document.getElementById('quitBtn');
+  const victoryScreen = document.getElementById('victoryScreen');
+  const victoryQuitBtn = document.getElementById('victoryQuitBtn');
+  const victoryText = document.getElementById('victoryText');
+  const distanceText = document.getElementById('distanceText');
+  const yearText = document.getElementById('yearText');
+  const gameCanvas = document.getElementById('gameCanvas');
+  const ctx = gameCanvas.getContext('2d');
+
+  // --- Constants ---
+  const W = gameCanvas.width;
+  const H = gameCanvas.height;
+  const FPS = 60;
+  const MAX_DISTANCE = 100; // in KM
+  const START_YEAR = 1957;
+  const END_YEAR = 1969;
+
+  // Ship properties
+  const SHIP_WIDTH = 30;
+  const SHIP_HEIGHT = 50;
+  const SHIP_Y = H - SHIP_HEIGHT - 20;
+
+  // Debris properties
+  const DEBRIS_MIN_SIZE = 15;
+  const DEBRIS_MAX_SIZE = 40;
+  const DEBRIS_MIN_SPEED = 1.5;
+  const DEBRIS_MAX_SPEED = 3.5;
+  const DEBRIS_SPAWN_INTERVAL = 1000; // ms
+
+  // Colors for neon glowing debris - subtle variations
+  const DEBRIS_COLORS = [
+    '#39ff14',
+    '#22cc00',
+    '#55ff44',
+    '#44ff33'
+  ];
+
+  // Game States
+  const STATE_MENU = 'menu';
+  const STATE_HISTORY = 'history';
+  const STATE_TIMELINE = 'timeline';
+  const STATE_CHOOSE_NATION = 'chooseNation';
+  const STATE_PLAYING = 'playing';
+  const STATE_FAILED = 'failed';
+  const STATE_VICTORY = 'victory';
+
+  // Current state
+  let currentState = STATE_MENU;
+
+  // Player choice
+  let playerNation = null; // "USA" or "USSR"
+
+  // Gameplay variables
+  let distance = 0;
+  let year = START_YEAR;
+  let obstacles = [];
+  let lastDebrisSpawn = 0;
+  let keysPressed = {};
+  let shipX = W/2 - SHIP_WIDTH/2;
+  let shipSpeedX = 0;
+  const SHIP_SPEED = 5;
+  let animationFrameId = null;
+
+  // Extra: rocket sprite shape (simple)
+  function drawRocket(x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+    // Glow shadow for neon
+    ctx.shadowColor = '#39ff14';
+    ctx.shadowBlur = 15;
+
+    // Rocket main body
+    ctx.fillStyle = '#39ff14';
+    ctx.beginPath();
+    ctx.moveTo(SHIP_WIDTH/2, 0);
+    ctx.lineTo(SHIP_WIDTH, SHIP_HEIGHT*0.8);
+    ctx.lineTo(0, SHIP_HEIGHT*0.8);
+    ctx.closePath();
+    ctx.fill();
+
+    // Window circle
+    ctx.fillStyle = '#0a3300';
+    ctx.beginPath();
+    ctx.arc(SHIP_WIDTH/2, SHIP_HEIGHT*0.5, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // Debris class
+  class Debris {
+    constructor() {
+      this.size = randInt(DEBRIS_MIN_SIZE, DEBRIS_MAX_SIZE);
+      this.x = Math.random() * (W - this.size);
+      this.y = -this.size;
+      this.speed = Math.random() * (DEBRIS_MAX_SPEED - DEBRIS_MIN_SPEED) + DEBRIS_MIN_SPEED;
+      this.color = DEBRIS_COLORS[randInt(0, DEBRIS_COLORS.length - 1)];
+      this.shapeType = randInt(0, 1); // 0=asteroid round, 1=space rock spiky
+      this.rotation = Math.random() * Math.PI * 2;
+      this.rotationSpeed = (Math.random() - 0.5) * 0.03;
+    }
+    update() {
+      this.y += this.speed;
+      this.rotation += this.rotationSpeed;
+    }
+    draw() {
+      ctx.save();
+      ctx.translate(this.x + this.size/2, this.y + this.size/2);
+      ctx.rotate(this.rotation);
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = this.color;
+      if(this.shapeType === 0){
+        // Round asteroid - irregular circle with shading
+        ctx.beginPath();
+        const spikes = 8;
+        for(let i=0; i<spikes; i++){
+          const angle = (Math.PI * 2 / spikes) * i;
+          const radius = this.size/2 * (0.7 + 0.3 * Math.sin(i*3));
+          ctx.lineTo(Math.cos(angle)*radius, Math.sin(angle)*radius);
+        }
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // Spiky rock - star shape
+        ctx.beginPath();
+        const spikes = 6;
+        for(let i=0; i<spikes*2; i++){
+          const angle = (Math.PI * 2 / (spikes*2)) * i;
+          const radius = i%2===0 ? this.size/2 : this.size/4;
+          ctx.lineTo(Math.cos(angle)*radius, Math.sin(angle)*radius);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    getBounds(){
+      return {
+        left: this.x,
+        right: this.x + this.size,
+        top: this.y,
+        bottom: this.y + this.size
+      };
+    }
+  }
+
+  // Utility
+  function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+
+  // Clear active screen and show a single target
+  function setActiveScreen(target) {
+    const screens = [mainMenu, historyBriefing, timeline, gameScreen, missionFailed, victoryScreen];
+    screens.forEach(s => s.classList.remove('active'));
+    target.classList.add('active');
+    currentState = {
+      [mainMenu.id]: STATE_MENU,
+      [historyBriefing.id]: STATE_HISTORY,
+      [timeline.id]: STATE_TIMELINE,
+      [gameScreen.id]: STATE_PLAYING,
+      [missionFailed.id]: STATE_FAILED,
+      [victoryScreen.id]: STATE_VICTORY,
+    }[target.id];
+  }
+
+  // === Main Menu Button Handlers ===
+
+  startSimBtn.addEventListener('click', () => {
+    showNationSelection();
+  });
+
+  historyBriefingBtn.addEventListener('click', () => {
+    setActiveScreen(historyBriefing);
+  });
+  timelineBtn.addEventListener('click', () => {
+    setActiveScreen(timeline);
+  });
+
+  backFromHistory.addEventListener('click', () => {
+    setActiveScreen(mainMenu);
+  });
+  backFromTimeline.addEventListener('click', () => {
+    setActiveScreen(mainMenu);
+  });
+
+  retryBtn.addEventListener('click', () => {
+    startGame();
+  });
+
+  quitBtn.addEventListener('click', () => {
+    setActiveScreen(mainMenu);
+    cancelAnimationFrame(animationFrameId);
+  });
+
+  victoryQuitBtn.addEventListener('click', () => {
+    setActiveScreen(mainMenu);
+    cancelAnimationFrame(animationFrameId);
+  });
+
+  // === Nation Selection Screen ===
+  function showNationSelection() {
+    // Create temporary screen with two big buttons
+    // If already present, reuse
+    let selectionDiv = document.getElementById('nationSelection');
+    if(selectionDiv){
+      mainMenu.style.display = 'none';
+      selectionDiv.style.display = 'flex';
+      return;
+    }
+    selectionDiv = document.createElement('section');
+    selectionDiv.id = 'nationSelection';
+    selectionDiv.style = `
+      position: absolute; top:0; left:0; width:100%; height:100%;
+      background: #001100dd; display:flex; flex-direction: column; align-items:center; justify-content:center;
+      color: #39ff14; font-family: 'Share Tech Mono', monospace; text-shadow: 0 0 10px #39ff14;
+      user-select: none;
+    `;
+    selectionDiv.innerHTML = `
+      <h2 class="glow-text">Choose Your Nation</h2>
+      <div style="display:flex; gap:40px; margin-top:30px;">
+      <button id="chooseUSA" aria-label="Choose America (democratic and land of the free)" style="font-size:1.8em; padding: 15px 35px; border: 3px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">
+        🇺🇸 USA
+      </button>
+      <button id="chooseUSSR" aria-label="Choose USSR (communist)" style="font-size:1.8em; padding: 15px 35px; border: 3px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">
+        ☭ USSR
+      </button>
+      </div>
+      <button id="cancelNationSelection" style="margin-top:40px; font-size:1em; border: 2px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">Cancel</button>
+    `;
+    document.getElementById('container').appendChild(selectionDiv);
+
+    document.getElementById('chooseUSA').addEventListener('click', () => {
+      playerNation = "USA";
+      selectionDiv.style.display = 'none';
+      mainMenu.style.display = 'flex';
+      startGame();
+    });
+    document.getElementById('chooseUSSR').addEventListener('click', () => {
+      playerNation = "USSR";
+      selectionDiv.style.display = 'none';
+      mainMenu.style.display = 'flex';
+      startGame();
+    });
+    document.getElementById('cancelNationSelection').addEventListener('click', () => {
+      selectionDiv.style.display = 'none';
+    });
+  }
+
+  // === Game Management ===
+  function startGame() {
+    setActiveScreen(gameScreen);
+    distance = 0;
+    year = START_YEAR;
+    obstacles = [];
+    lastDebrisSpawn = 0;
+    shipX = W/2 - SHIP_WIDTH/2;
+    shipSpeedX = 0;
+    keysPressed = {};
+    updateHUD();
+    window.addEventListener('keydown', keydownHandler);
+    window.addEventListener('keyup', keyupHandler);
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+
+  function endGame(success) {
+    window.removeEventListener('keydown', keydownHandler);
+    window.removeEventListener('keyup', keyupHandler);
+    cancelAnimationFrame(animationFrameId);
+
+    if(success){
+      // Show victory
+      setActiveScreen(victoryScreen);
+      victoryText.textContent = playerNation === "USA"
+        ? "Congrats! Apollo 11 actually landed on the Moon in 1969, which was a huge deal and a massive win for the US."
+        : "My comrade, congrats! The Soviet space program reached big heights during the Space Race, inspiring workers all over the world to look to the stars!";
+    } else {
+      // Show failure
+      setActiveScreen(missionFailed);
+    }
+  }
+
+  // === Input Handling ===
+  function keydownHandler(e){
+    if(e.code === 'KeyA' || e.code === 'ArrowLeft'){
+      keysPressed.left = true;
+    }
+    if(e.code === 'KeyD' || e.code === 'ArrowRight'){
+      keysPressed.right = true;
+    }
+  }
+  function keyupHandler(e){
+    if(e.code === 'KeyA' || e.code === 'ArrowLeft'){
+      keysPressed.left = false;
+    }
+    if(e.code === 'KeyD' || e.code === 'ArrowRight'){
+      keysPressed.right = false;
+    }
+  }
+
+  // === HUD Update ===
+  function updateHUD(){
+    distanceText.textContent = `Distance Flown: ${distance.toFixed(2)} KM`;
+    yearText.textContent = `Year: ${year}`;
+  }
+
+  // === Collision Detection AABB (rectangle) ===
+  function collision(rect1, rect2){
+    return !(rect2.left > rect1.right ||
+             rect2.right < rect1.left ||
+             rect2.top > rect1.bottom ||
+             rect2.bottom < rect1.top);
+  }
+
+  // === Game Loop ===
+  let lastTime = 0;
+  function gameLoop(ts=0){
+    if(!lastTime) lastTime = ts;
+    const deltaTime = ts - lastTime;
+    lastTime = ts;
+
+    // Clear canvas with dark radar green + subtle scanlines
+    ctx.clearRect(0,0,W,H);
+
+    drawRadarGrid();
+
+    // Update ship position
+    if(keysPressed.left){
+      shipX -= SHIP_SPEED;
+    }
+    if(keysPressed.right) {
+      shipX += SHIP_SPEED;
+    }
+    // Clamp ship inside canvas
+    if(shipX < 0) shipX = 0;
+    if(shipX > W - SHIP_WIDTH) shipX = W - SHIP_WIDTH;
+
+    // Spawn debris
+    lastDebrisSpawn += deltaTime;
+    if(lastDebrisSpawn > DEBRIS_SPAWN_INTERVAL){
+      obstacles.push(new Debris());
+      lastDebrisSpawn = 0;
+    }
+
+    // Update debris positions and remove those off screen
+    obstacles = obstacles.filter(d => d.y < H + d.size);
+    obstacles.forEach(d => d.update());
+
+    // Draw debris
+    obstacles.forEach(d => d.draw());
+
+    // Draw rocket
+    drawRocket(shipX, SHIP_Y);
+
+    // Calculate distance and year progress - progress speed proportional to FPS and constant rate
+    distance += 0.07 * (deltaTime / (1000 / FPS)); // ~0.07 km per frame approx, modulated by frame time
+    if(distance > MAX_DISTANCE) distance = MAX_DISTANCE;
+
+    // Map distance between 0 - MAX_DISTANCE to START_YEAR - END_YEAR scale
+    const yearProgress = START_YEAR + (distance / MAX_DISTANCE) * (END_YEAR - START_YEAR);
+    year = Math.floor(yearProgress);
+
+    updateHUD();
+
+    // Collision detection between ship and obstacles
+    const shipBox = {
+      left: shipX,
+      right: shipX + SHIP_WIDTH,
+      top: SHIP_Y,
+      bottom: SHIP_Y + SHIP_HEIGHT
+    };
+    
+    for(const d of obstacles){
+      const dBox = d.getBounds();
+      if(collision(shipBox, dBox)){
+        // Collision happened! Game over.
+        endGame(false);
+        return;
+      }
+    }
+
+    // Victory condition
+    if(distance >= MAX_DISTANCE){
+      endGame(true);
+      return;
+    }
+
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+
+  // Radar grid drawing (vertical and horizontal lines)
+  function drawRadarGrid(){
+    ctx.strokeStyle = 'rgba(57,255,20,0.15)';
+    ctx.lineWidth = 1;
+    const gridSpacing = 40;
+
+    // horizontal lines
+    for(let y=0; y <= H; y += gridSpacing){
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
+    // vertical lines
+    for(let x=0; x <= W; x += gridSpacing){
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+      ctx.stroke();
+    }
+
+    // center circle
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(57,255,20,0.06)';
+    ctx.lineWidth = 2;
+    ctx.arc(W/2, H - SHIP_HEIGHT - 20 + SHIP_HEIGHT/2, 50, 0, Math.PI*2);
+    ctx.stroke();
+  }
+
+  // Initialize on load (nothing else to do)
+})();
+</script>
+</body>
+</html>

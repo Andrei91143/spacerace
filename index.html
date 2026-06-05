@@ -225,8 +225,6 @@
   </section>
 </div>
 
-<!-- Nation and Difficulty Selection containers will be created dynamically -->
-
 <script>
 (() => {
   'use strict';
@@ -537,8 +535,10 @@
     `;
     document.getElementById('container').appendChild(difficultySelection);
 
+    // Fix: Add event listeners here that also immediately show nation selection
     document.getElementById('easyBtn').addEventListener('click', () => {
       playerDifficulty = 'Easy';
+      // Hide difficulty selection and immediately show nation selection to continue
       hideDifficultySelection();
       showNationSelection();
     });
@@ -669,19 +669,17 @@
     const deltaTime = ts - lastTime;
     lastTime = ts;
 
-    // Clear canvas with dark radar green + subtle scanlines
     ctx.clearRect(0,0,W,H);
 
     drawRadarGrid();
 
-    // Update ship position
+    // Ship controls
     if(keysPressed.left){
       shipX -= SHIP_SPEED;
     }
-    if(keysPressed.right) {
+    if(keysPressed.right){
       shipX += SHIP_SPEED;
     }
-    // Clamp ship inside canvas
     if(shipX < 0) shipX = 0;
     if(shipX > W - SHIP_WIDTH) shipX = W - SHIP_WIDTH;
 
@@ -692,27 +690,21 @@
       lastDebrisSpawn = 0;
     }
 
-    // Update debris positions and remove those off screen
     obstacles = obstacles.filter(d => d.y < H + d.size);
     obstacles.forEach(d => d.update());
 
-    // Draw debris
     obstacles.forEach(d => d.draw());
 
-    // Draw rocket
     drawRocket(shipX, SHIP_Y);
 
-    // Calculate distance and year progress - progress speed proportional to FPS and constant rate
     distance += 0.07 * (deltaTime / (1000 / FPS));
     if(distance > MAX_DISTANCE) distance = MAX_DISTANCE;
 
-    // Map distance between 0 - MAX_DISTANCE to START_YEAR - END_YEAR scale
     const yearProgress = START_YEAR + (distance / MAX_DISTANCE) * (END_YEAR - START_YEAR);
     year = Math.floor(yearProgress);
 
     updateHUD();
 
-    // Collision detection between ship and obstacles
     const shipBox = {
       left: shipX,
       right: shipX + SHIP_WIDTH,

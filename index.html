@@ -122,6 +122,48 @@
     font-size: 0.9em;
     color: #22cc00;
   }
+  /* Nation and Difficulty Selection Styles */
+  #nationSelection, #difficultySelection {
+    position: absolute; top:0; left:0; width:100%; height:100%;
+    background: #001100cc;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #39ff14;
+    font-family: 'Share Tech Mono', monospace;
+    text-shadow: 0 0 10px #39ff14;
+    user-select: none;
+    z-index: 10;
+  }
+  #nationSelection > div, #difficultySelection > div {
+    display: flex;
+    gap: 40px;
+    margin-top: 30px;
+  }
+  #nationSelection button, #difficultySelection button {
+    font-size: 1.8em;
+    padding: 15px 35px;
+    border: 3px solid #39ff14;
+    background: transparent;
+    color: #39ff14;
+    cursor: pointer;
+    min-width: 120px;
+    transition: background 0.3s, color 0.3s;
+  }
+  #nationSelection button:hover, #nationSelection button:focus,
+  #difficultySelection button:hover, #difficultySelection button:focus {
+    background: #39ff14;
+    color: #001100;
+    outline: none;
+  }
+  #nationSelection #cancelNationSelection, #difficultySelection #cancelDifficultySelection {
+    margin-top: 40px;
+    font-size: 1em;
+    border: 2px solid #39ff14;
+    background: transparent;
+    color: #39ff14;
+    cursor: pointer;
+    padding: 10px 20px;
+    min-width: auto;
+  }
 </style>
 </head>
 <body>
@@ -130,7 +172,7 @@
   <section id="mainMenu" class="active" role="menu" aria-label="Main Menu">
     <h1 class="glow-text">Cold War Space Race by Andrei R</h1>
     <button id="startSimBtn" aria-label="Start the simulation">Start Sim</button>
-    <button id="historyBriefingBtn" aria-label="Open the history">Fast History about Space
+    <button id="historyBriefingBtn" aria-label="Open the history">Fast History about Space</button>
     <button id="timelineBtn" aria-label="Open the timeline">Timeline of Space Race</button>
   </section>
   <!-- History -->
@@ -142,7 +184,7 @@
       <p>This competition made science and technology advance really fast. It was also a big way for both sides to prove that their government and way of life were better during the Cold War.</p>
       <p>Your mission is to safely fly a space capsule through dangerous space junk, just like the early astronauts had to do, and land on the Moon to win the race for your country.</p>
     </div>
-    <button id="backFromHistory" aria-label="Return to main menu">Return Back to Menu</button>
+    <button idbackFromHistory" aria-label="Return to main menu">Return Back to Menu</button>
   </section>
   <!-- Timeline -->
   <section id="timeline" role="document" aria-label="Timeline">
@@ -182,6 +224,9 @@
     <button id="victoryQuitBtn" aria-label="Return to main menu">Return to Menu</button>
   </section>
 </div>
+
+<!-- Nation and Difficulty Selection containers will be created dynamically -->
+
 <script>
 (() => {
   'use strict';
@@ -220,12 +265,12 @@
   const SHIP_HEIGHT = 50;
   const SHIP_Y = H - SHIP_HEIGHT - 20;
 
-  // Debris properties
+  // Default Debris properties (for Medium difficulty)
   const DEBRIS_MIN_SIZE = 15;
   const DEBRIS_MAX_SIZE = 40;
-  const DEBRIS_MIN_SPEED = 1.5;
-  const DEBRIS_MAX_SPEED = 3.5;
-  const DEBRIS_SPAWN_INTERVAL = 1000; // ms
+  const DEBRIS_MIN_SPEED_DEFAULT = 1.5;
+  const DEBRIS_MAX_SPEED_DEFAULT = 3.5;
+  const DEBRIS_SPAWN_INTERVAL_DEFAULT = 1000; // ms
 
   // Colors for neon glowing debris - subtle variations
   const DEBRIS_COLORS = [
@@ -240,6 +285,7 @@
   const STATE_HISTORY = 'history';
   const STATE_TIMELINE = 'timeline';
   const STATE_CHOOSE_NATION = 'chooseNation';
+  const STATE_CHOOSE_DIFFICULTY = 'chooseDifficulty';
   const STATE_PLAYING = 'playing';
   const STATE_FAILED = 'failed';
   const STATE_VICTORY = 'victory';
@@ -247,8 +293,9 @@
   // Current state
   let currentState = STATE_MENU;
 
-  // Player choice
+  // Player choices
   let playerNation = null; // "USA" or "USSR"
+  let playerDifficulty = null; // "Easy", "Medium", "Hard"
 
   // Gameplay variables
   let distance = 0;
@@ -257,31 +304,32 @@
   let lastDebrisSpawn = 0;
   let keysPressed = {};
   let shipX = W/2 - SHIP_WIDTH/2;
-  let shipSpeedX = 0;
   const SHIP_SPEED = 5;
   let animationFrameId = null;
+
+  // Difficulty-adjusted parameters (set before game start)
+  let DEBRIS_MIN_SPEED;
+  let DEBRIS_MAX_SPEED;
+  let DEBRIS_SPAWN_INTERVAL;
 
   // Extra: rocket sprite shape (simple)
   function drawRocket(x, y) {
     ctx.save();
     ctx.translate(x, y);
-    // Glow shadow for neon
     ctx.shadowColor = '#39ff14';
     ctx.shadowBlur = 15;
 
-    // Rocket main body
     ctx.fillStyle = '#39ff14';
     ctx.beginPath();
     ctx.moveTo(SHIP_WIDTH/2, 0);
-    ctx.lineTo(SHIP_WIDTH, SHIP_HEIGHT*0.8);
-    ctx.lineTo(0, SHIP_HEIGHT*0.8);
+    ctx.lineTo(SHIP_WIDTH, SHIP_HEIGHT * 0.8);
+    ctx.lineTo(0, SHIP_HEIGHT * 0.8);
     ctx.closePath();
     ctx.fill();
 
-    // Window circle
     ctx.fillStyle = '#0a3300';
     ctx.beginPath();
-    ctx.arc(SHIP_WIDTH/2, SHIP_HEIGHT*0.5, 7, 0, Math.PI * 2);
+    ctx.arc(SHIP_WIDTH/2, SHIP_HEIGHT * 0.5, 7, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -295,7 +343,7 @@
       this.y = -this.size;
       this.speed = Math.random() * (DEBRIS_MAX_SPEED - DEBRIS_MIN_SPEED) + DEBRIS_MIN_SPEED;
       this.color = DEBRIS_COLORS[randInt(0, DEBRIS_COLORS.length - 1)];
-      this.shapeType = randInt(0, 1); // 0=asteroid round, 1=space rock spiky
+      this.shapeType = randInt(0, 1);
       this.rotation = Math.random() * Math.PI * 2;
       this.rotationSpeed = (Math.random() - 0.5) * 0.03;
     }
@@ -310,32 +358,30 @@
       ctx.shadowColor = this.color;
       ctx.shadowBlur = 15;
       ctx.fillStyle = this.color;
-      if(this.shapeType === 0){
-        // Round asteroid - irregular circle with shading
+      if (this.shapeType === 0) {
         ctx.beginPath();
         const spikes = 8;
-        for(let i=0; i<spikes; i++){
+        for (let i = 0; i < spikes; i++) {
           const angle = (Math.PI * 2 / spikes) * i;
-          const radius = this.size/2 * (0.7 + 0.3 * Math.sin(i*3));
-          ctx.lineTo(Math.cos(angle)*radius, Math.sin(angle)*radius);
+          const radius = this.size / 2 * (0.7 + 0.3 * Math.sin(i * 3));
+          ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
         }
         ctx.closePath();
         ctx.fill();
       } else {
-        // Spiky rock - star shape
         ctx.beginPath();
         const spikes = 6;
-        for(let i=0; i<spikes*2; i++){
-          const angle = (Math.PI * 2 / (spikes*2)) * i;
-          const radius = i%2===0 ? this.size/2 : this.size/4;
-          ctx.lineTo(Math.cos(angle)*radius, Math.sin(angle)*radius);
+        for (let i = 0; i < spikes * 2; i++) {
+          const angle = (Math.PI * 2 / (spikes * 2)) * i;
+          const radius = i % 2 === 0 ? this.size / 2 : this.size / 4;
+          ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
         }
         ctx.closePath();
         ctx.fill();
       }
       ctx.restore();
     }
-    getBounds(){
+    getBounds() {
       return {
         left: this.x,
         right: this.x + this.size,
@@ -350,8 +396,8 @@
 
   // Clear active screen and show a single target
   function setActiveScreen(target) {
-    const screens = [mainMenu, historyBriefing, timeline, gameScreen, missionFailed, victoryScreen];
-    screens.forEach(s => s.classList.remove('active'));
+    const screens = [mainMenu, historyBriefing, timeline, gameScreen, missionFailed, victoryScreen, nationSelection, difficultySelection];
+    screens.forEach(s => s?.classList?.remove('active'));
     target.classList.add('active');
     currentState = {
       [mainMenu.id]: STATE_MENU,
@@ -360,13 +406,19 @@
       [gameScreen.id]: STATE_PLAYING,
       [missionFailed.id]: STATE_FAILED,
       [victoryScreen.id]: STATE_VICTORY,
-    }[target.id];
+      [nationSelection?.id]: STATE_CHOOSE_NATION,
+      [difficultySelection?.id]: STATE_CHOOSE_DIFFICULTY,
+    }[target.id] || currentState;
   }
+
+  // === Nation & Difficulty Selection Containers ===
+  let nationSelection = null;
+  let difficultySelection = null;
 
   // === Main Menu Button Handlers ===
 
   startSimBtn.addEventListener('click', () => {
-    showNationSelection();
+    showDifficultySelection();
   });
 
   historyBriefingBtn.addEventListener('click', () => {
@@ -397,64 +449,165 @@
     cancelAnimationFrame(animationFrameId);
   });
 
-  // === Nation Selection Screen ===
-  function showNationSelection() {
-    // Create temporary screen with two big buttons
-    // If already present, reuse
-    let selectionDiv = document.getElementById('nationSelection');
-    if(selectionDiv){
-      mainMenu.style.display = 'none';
-      selectionDiv.style.display = 'flex';
-      return;
-    }
-    selectionDiv = document.createElement('section');
-    selectionDiv.id = 'nationSelection';
-    selectionDiv.style = `
+  // === Nation Selection & Difficulty Selection ===
+
+  function createNationSelection(){
+    if(nationSelection) return;
+    nationSelection = document.createElement('section');
+    nationSelection.id = 'nationSelection';
+    nationSelection.classList.add('active');
+    nationSelection.style = `
       position: absolute; top:0; left:0; width:100%; height:100%;
       background: #001100dd; display:flex; flex-direction: column; align-items:center; justify-content:center;
       color: #39ff14; font-family: 'Share Tech Mono', monospace; text-shadow: 0 0 10px #39ff14;
       user-select: none;
+      z-index: 10;
     `;
-    selectionDiv.innerHTML = `
+    nationSelection.innerHTML = `
       <h2 class="glow-text">Choose Your Nation</h2>
       <div style="display:flex; gap:40px; margin-top:30px;">
-      <button id="chooseUSA" aria-label="Choose America (democratic and land of the free)" style="font-size:1.8em; padding: 15px 35px; border: 3px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">
-        🇺🇸 USA
-      </button>
-      <button id="chooseUSSR" aria-label="Choose USSR (communist)" style="font-size:1.8em; padding: 15px 35px; border: 3px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">
-        ☭ USSR
-      </button>
+        <button id="chooseUSA" aria-label="Choose America (democratic and land of the free)" style="font-size:1.8em; padding: 15px 35px; border: 3px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">
+          🇺🇸 USA
+        </button>
+        <button id="chooseUSSR" aria-label="Choose USSR (communist)" style="font-size:1.8em; padding: 15px 35px; border: 3px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">
+          ☭ USSR
+        </button>
       </div>
       <button id="cancelNationSelection" style="margin-top:40px; font-size:1em; border: 2px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">Cancel</button>
     `;
-    document.getElementById('container').appendChild(selectionDiv);
+    document.getElementById('container').appendChild(nationSelection);
 
     document.getElementById('chooseUSA').addEventListener('click', () => {
       playerNation = "USA";
-      selectionDiv.style.display = 'none';
-      mainMenu.style.display = 'flex';
+      hideNationSelection();
       startGame();
     });
     document.getElementById('chooseUSSR').addEventListener('click', () => {
       playerNation = "USSR";
-      selectionDiv.style.display = 'none';
-      mainMenu.style.display = 'flex';
+      hideNationSelection();
       startGame();
     });
     document.getElementById('cancelNationSelection').addEventListener('click', () => {
-      selectionDiv.style.display = 'none';
+      hideNationSelection();
+      setActiveScreen(mainMenu);
     });
+  }
+  function showNationSelection(){
+    createNationSelection();
+    nationSelection.style.display = 'flex';
+    nationSelection.classList.add('active');
+    mainMenu.style.display = 'none';
+    setActiveScreen(nationSelection);
+  }
+  function hideNationSelection(){
+    if(nationSelection){
+      nationSelection.style.display = 'none';
+      nationSelection.classList.remove('active');
+      mainMenu.style.display = 'flex';
+      setActiveScreen(mainMenu);
+    }
+  }
+
+  function createDifficultySelection(){
+    if(difficultySelection) return;
+    difficultySelection = document.createElement('section');
+    difficultySelection.id = 'difficultySelection';
+    difficultySelection.classList.add('active');
+    difficultySelection.style = `
+      position: absolute; top:0; left:0; width:100%; height:100%;
+      background: #001100dd; display:flex; flex-direction: column; align-items:center; justify-content:center;
+      color: #39ff14; font-family: 'Share Tech Mono', monospace; text-shadow: 0 0 10px #39ff14;
+      user-select: none;
+      z-index: 10;
+    `;
+    difficultySelection.innerHTML = `
+      <h2 class="glow-text">Select Difficulty</h2>
+      <div style="display:flex; gap:40px; margin-top:30px;">
+        <button id="easyBtn" aria-label="Easy difficulty" style="font-size:1.8em; padding: 15px 35px; border: 3px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">
+          Easy
+        </button>
+        <button id="mediumBtn" aria-label="Medium difficulty" style="font-size:1.8em; padding: 15px 35px; border: 3px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">
+          Medium
+        </button>
+        <button id="hardBtn" aria-label="Hard difficulty" style="font-size:1.8em; padding: 15px 35px; border: 3px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">
+          Hard
+        </button>
+      </div>
+      <button id="cancelDifficultySelection" style="margin-top:40px; font-size:1em; border: 2px solid #39ff14; background: transparent; color: #39ff14; cursor: pointer;">Cancel</button>
+    `;
+    document.getElementById('container').appendChild(difficultySelection);
+
+    document.getElementById('easyBtn').addEventListener('click', () => {
+      playerDifficulty = 'Easy';
+      hideDifficultySelection();
+      showNationSelection();
+    });
+    document.getElementById('mediumBtn').addEventListener('click', () => {
+      playerDifficulty = 'Medium';
+      hideDifficultySelection();
+      showNationSelection();
+    });
+    document.getElementById('hardBtn').addEventListener('click', () => {
+      playerDifficulty = 'Hard';
+      hideDifficultySelection();
+      showNationSelection();
+    });
+    document.getElementById('cancelDifficultySelection').addEventListener('click', () => {
+      hideDifficultySelection();
+      setActiveScreen(mainMenu);
+    });
+  }
+  function showDifficultySelection(){
+    createDifficultySelection();
+    difficultySelection.style.display = 'flex';
+    difficultySelection.classList.add('active');
+    mainMenu.style.display = 'none';
+    setActiveScreen(difficultySelection);
+  }
+  function hideDifficultySelection(){
+    if(difficultySelection){
+      difficultySelection.style.display = 'none';
+      difficultySelection.classList.remove('active');
+      mainMenu.style.display = 'flex';
+      setActiveScreen(mainMenu);
+    }
+  }
+
+  // === Apply difficulty settings before game start ===
+  function applyDifficultySettings(){
+    switch(playerDifficulty){
+      case 'Easy':
+        DEBRIS_MIN_SPEED = DEBRIS_MIN_SPEED_DEFAULT * 0.5;
+        DEBRIS_MAX_SPEED = DEBRIS_MAX_SPEED_DEFAULT * 0.7;
+        DEBRIS_SPAWN_INTERVAL = DEBRIS_SPAWN_INTERVAL_DEFAULT * 1.7;
+        break;
+      case 'Medium':
+        DEBRIS_MIN_SPEED = DEBRIS_MIN_SPEED_DEFAULT;
+        DEBRIS_MAX_SPEED = DEBRIS_MAX_SPEED_DEFAULT;
+        DEBRIS_SPAWN_INTERVAL = DEBRIS_SPAWN_INTERVAL_DEFAULT;
+        break;
+      case 'Hard':
+        DEBRIS_MIN_SPEED = DEBRIS_MIN_SPEED_DEFAULT * 2.5;
+        DEBRIS_MAX_SPEED = DEBRIS_MAX_SPEED_DEFAULT * 3.0;
+        DEBRIS_SPAWN_INTERVAL = DEBRIS_SPAWN_INTERVAL_DEFAULT * 0.4;
+        break;
+      default:
+        DEBRIS_MIN_SPEED = DEBRIS_MIN_SPEED_DEFAULT;
+        DEBRIS_MAX_SPEED = DEBRIS_MAX_SPEED_DEFAULT;
+        DEBRIS_SPAWN_INTERVAL = DEBRIS_SPAWN_INTERVAL_DEFAULT;
+        break;
+    }
   }
 
   // === Game Management ===
   function startGame() {
+    applyDifficultySettings();
     setActiveScreen(gameScreen);
     distance = 0;
     year = START_YEAR;
     obstacles = [];
     lastDebrisSpawn = 0;
     shipX = W/2 - SHIP_WIDTH/2;
-    shipSpeedX = 0;
     keysPressed = {};
     updateHUD();
     window.addEventListener('keydown', keydownHandler);
@@ -468,13 +621,11 @@
     cancelAnimationFrame(animationFrameId);
 
     if(success){
-      // Show victory
       setActiveScreen(victoryScreen);
       victoryText.textContent = playerNation === "USA"
         ? "Congrats! Apollo 11 actually landed on the Moon in 1969, which was a huge deal and a massive win for the US."
         : "My comrade, congrats! The Soviet space program reached big heights during the Space Race, inspiring workers all over the world to look to the stars!";
     } else {
-      // Show failure
       setActiveScreen(missionFailed);
     }
   }
@@ -552,7 +703,7 @@
     drawRocket(shipX, SHIP_Y);
 
     // Calculate distance and year progress - progress speed proportional to FPS and constant rate
-    distance += 0.07 * (deltaTime / (1000 / FPS)); // ~0.07 km per frame approx, modulated by frame time
+    distance += 0.07 * (deltaTime / (1000 / FPS));
     if(distance > MAX_DISTANCE) distance = MAX_DISTANCE;
 
     // Map distance between 0 - MAX_DISTANCE to START_YEAR - END_YEAR scale
@@ -572,13 +723,11 @@
     for(const d of obstacles){
       const dBox = d.getBounds();
       if(collision(shipBox, dBox)){
-        // Collision happened! Game over.
         endGame(false);
         return;
       }
     }
 
-    // Victory condition
     if(distance >= MAX_DISTANCE){
       endGame(true);
       return;
@@ -587,20 +736,18 @@
     animationFrameId = requestAnimationFrame(gameLoop);
   }
 
-  // Radar grid drawing (vertical and horizontal lines)
+  // Radar grid drawing
   function drawRadarGrid(){
     ctx.strokeStyle = 'rgba(57,255,20,0.15)';
     ctx.lineWidth = 1;
     const gridSpacing = 40;
 
-    // horizontal lines
     for(let y=0; y <= H; y += gridSpacing){
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(W, y);
       ctx.stroke();
     }
-    // vertical lines
     for(let x=0; x <= W; x += gridSpacing){
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -608,7 +755,6 @@
       ctx.stroke();
     }
 
-    // center circle
     ctx.beginPath();
     ctx.strokeStyle = 'rgba(57,255,20,0.06)';
     ctx.lineWidth = 2;
@@ -616,7 +762,12 @@
     ctx.stroke();
   }
 
-  // Initialize on load (nothing else to do)
+  // Initialize nation & difficulty selection variables
+  let screens = [mainMenu, historyBriefing, timeline, gameScreen, missionFailed, victoryScreen];
+
+  // Start on main menu
+  setActiveScreen(mainMenu);
+
 })();
 </script>
 </body>

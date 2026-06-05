@@ -89,14 +89,14 @@
     user-select: none;
     font-weight: 700;
   }
-  /* Radar grid lines - behind game canvas */
+  
   #radarGrid {
     position: absolute;
     top: 0; left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
   }
-  /* glowing text blocks */
+  
   .glow-text {
     text-shadow:
       0 0 5px #39ff14,
@@ -104,7 +104,7 @@
       0 0 20px #39ff14,
       0 0 30px #22cc00;
   }
-  /* scroll content for briefing and timeline */
+  
   #historyText, #timelineText {
     max-width: 700px;
     max-height: 70vh;
@@ -116,13 +116,13 @@
     background: #001100dd;
     line-height: 1.4em;
   }
-  /* Controls Instruction */
+  
   #controlsInfo {
     margin-top: 8px;
     font-size: 0.9em;
     color: #22cc00;
   }
-  /* Nation and Difficulty Selection Styles */
+  
   #nationSelection, #difficultySelection {
     position: absolute; top:0; left:0; width:100%; height:100%;
     background: #001100cc;
@@ -168,14 +168,14 @@
 </head>
 <body>
 <div id="container">
-  <!-- Main Menu -->
+  
   <section id="mainMenu" class="active" role="menu" aria-label="Main Menu">
     <h1 class="glow-text">Cold War Space Race by Andrei R</h1>
     <button id="startSimBtn" aria-label="Start the simulation">Start Sim</button>
     <button id="historyBriefingBtn" aria-label="Open the history">Fast History about Space</button>
     <button id="timelineBtn" aria-label="Open the timeline">Timeline of Space Race</button>
   </section>
-  <!-- History -->
+  
   <section id="historyBriefing" role="document" aria-label="History Briefing">
     <h2 class="glow-text">History of Cold War</h2>
     <div id="historyText" tabindex="0">
@@ -186,7 +186,7 @@
     </div>
     <button id="backFromHistory" aria-label="Return to main menu">Return Back to Menu</button>
   </section>
-  <!-- Timeline -->
+  
   <section id="timeline" role="document" aria-label="Timeline">
     <h2 class="glow-text">Space Race Timeline</h2>
     <div id="timelineText" tabindex="0">
@@ -201,7 +201,7 @@
     </div>
     <button id="backFromTimeline" aria-label="Return to main menu">Return Back to Menu</button>
   </section>
-  <!-- Game Screen -->
+  
   <section id="gameScreen" aria-label="Space Race Simulation" role="main">
     <div id="hud" aria-live="polite" aria-atomic="true">
       <span id="distanceText">Distance Flown: 0 KM</span> | 
@@ -210,14 +210,14 @@
     <canvas id="gameCanvas" width="400" height="600" role="img" aria-label="Game canvas showing rocket and obstacles"></canvas>
     <div id="controlsInfo">Controls: Use A & D keys to steer left and right</div>
   </section>
-  <!-- Mission Failed -->
+  
   <section id="missionFailed" role="alertdialog" aria-modal="true" aria-labelledby="failedTitle">
     <h2 id="failedTitle" class="glow-text">Mission Failed (This is an easy game bro.)</h2>
     <p>Your capsule was destroyed by space debris.</p>
     <button id="retryBtn" aria-label="Retry to main menu">Retry</button>
     <button id="quitBtn" aria-label="Quit to main menu">Quit to Menu (Only losers do this)</button>
   </section>
-  <!-- Victory Screen -->
+  
   <section id="victoryScreen" role="alertdialog" aria-modal="true" aria-labelledby="victoryTitle">
     <h2 id="victoryTitle" class="glow-text">MISSION SUCCESS</h2>
     <p id="victoryText"></p>
@@ -229,7 +229,7 @@
 (() => {
   'use strict';
 
-  // DOM references
+ 
   const mainMenu = document.getElementById('mainMenu');
   const startSimBtn = document.getElementById('startSimBtn');
   const historyBriefing = document.getElementById('historyBriefing');
@@ -250,7 +250,7 @@
   const gameCanvas = document.getElementById('gameCanvas');
   const ctx = gameCanvas.getContext('2d');
 
-  // --- Constants ---
+  
   const W = gameCanvas.width;
   const H = gameCanvas.height;
   const FPS = 60;
@@ -258,19 +258,19 @@
   const START_YEAR = 1957;
   const END_YEAR = 1969;
 
-  // Ship properties
+  
   const SHIP_WIDTH = 30;
   const SHIP_HEIGHT = 50;
   const SHIP_Y = H - SHIP_HEIGHT - 20;
 
-  // Default Debris properties (for Medium difficulty)
+  
   const DEBRIS_MIN_SIZE = 15;
   const DEBRIS_MAX_SIZE = 40;
   const DEBRIS_MIN_SPEED_DEFAULT = 1.5;
   const DEBRIS_MAX_SPEED_DEFAULT = 3.5;
   const DEBRIS_SPAWN_INTERVAL_DEFAULT = 1000; // ms
 
-  // Colors for neon glowing debris - subtle variations
+  
   const DEBRIS_COLORS = [
     '#39ff14',
     '#22cc00',
@@ -278,7 +278,7 @@
     '#44ff33'
   ];
 
-  // Game States
+  
   const STATE_MENU = 'menu';
   const STATE_HISTORY = 'history';
   const STATE_TIMELINE = 'timeline';
@@ -288,14 +288,14 @@
   const STATE_FAILED = 'failed';
   const STATE_VICTORY = 'victory';
 
-  // Current state
+  
   let currentState = STATE_MENU;
 
-  // Player choices
+  
   let playerNation = null; // "USA" or "USSR"
   let playerDifficulty = null; // "Easy", "Medium", "Hard"
 
-  // Gameplay variables
+  
   let distance = 0;
   let year = START_YEAR;
   let obstacles = [];
@@ -305,12 +305,12 @@
   const SHIP_SPEED = 5;
   let animationFrameId = null;
 
-  // Difficulty-adjusted parameters (set before game start)
+  
   let DEBRIS_MIN_SPEED;
   let DEBRIS_MAX_SPEED;
   let DEBRIS_SPAWN_INTERVAL;
 
-  // Extra: rocket sprite shape (simple)
+  
   function drawRocket(x, y) {
     ctx.save();
     ctx.translate(x, y);
@@ -333,7 +333,7 @@
     ctx.restore();
   }
 
-  // Debris class
+  
   class Debris {
     constructor() {
       this.size = randInt(DEBRIS_MIN_SIZE, DEBRIS_MAX_SIZE);
@@ -389,10 +389,10 @@
     }
   }
 
-  // Utility
+  
   function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
 
-  // Clear active screen and show a single target
+  
   function setActiveScreen(target) {
     const screens = [mainMenu, historyBriefing, timeline, gameScreen, missionFailed, victoryScreen, nationSelection, difficultySelection];
     screens.forEach(s => s?.classList?.remove('active'));
@@ -409,11 +409,11 @@
     }[target.id] || currentState;
   }
 
-  // === Nation & Difficulty Selection Containers ===
+  
   let nationSelection = null;
   let difficultySelection = null;
 
-  // === Main Menu Button Handlers ===
+  
 
   startSimBtn.addEventListener('click', () => {
     showDifficultySelection();
@@ -447,7 +447,7 @@
     cancelAnimationFrame(animationFrameId);
   });
 
-  // === Nation Selection & Difficulty Selection ===
+  
 
   function createNationSelection(){
     if(nationSelection) return;
@@ -535,10 +535,10 @@
     `;
     document.getElementById('container').appendChild(difficultySelection);
 
-    // Fix: Add event listeners here that also immediately show nation selection
+    
     document.getElementById('easyBtn').addEventListener('click', () => {
       playerDifficulty = 'Easy';
-      // Hide difficulty selection and immediately show nation selection to continue
+      
       hideDifficultySelection();
       showNationSelection();
     });
@@ -573,7 +573,7 @@
     }
   }
 
-  // === Apply difficulty settings before game start ===
+  
   function applyDifficultySettings(){
     switch(playerDifficulty){
       case 'Easy':
@@ -599,7 +599,7 @@
     }
   }
 
-  // === Game Management ===
+  
   function startGame() {
     applyDifficultySettings();
     setActiveScreen(gameScreen);
@@ -630,7 +630,7 @@
     }
   }
 
-  // === Input Handling ===
+  
   function keydownHandler(e){
     if(e.code === 'KeyA' || e.code === 'ArrowLeft'){
       keysPressed.left = true;
@@ -648,13 +648,13 @@
     }
   }
 
-  // === HUD Update ===
+  
   function updateHUD(){
     distanceText.textContent = `Distance Flown: ${distance.toFixed(2)} KM`;
     yearText.textContent = `Year: ${year}`;
   }
 
-  // === Collision Detection AABB (rectangle) ===
+  
   function collision(rect1, rect2){
     return !(rect2.left > rect1.right ||
              rect2.right < rect1.left ||
@@ -662,7 +662,7 @@
              rect2.bottom < rect1.top);
   }
 
-  // === Game Loop ===
+  
   let lastTime = 0;
   function gameLoop(ts=0){
     if(!lastTime) lastTime = ts;
@@ -673,7 +673,7 @@
 
     drawRadarGrid();
 
-    // Ship controls
+    
     if(keysPressed.left){
       shipX -= SHIP_SPEED;
     }
@@ -683,7 +683,7 @@
     if(shipX < 0) shipX = 0;
     if(shipX > W - SHIP_WIDTH) shipX = W - SHIP_WIDTH;
 
-    // Spawn debris
+    
     lastDebrisSpawn += deltaTime;
     if(lastDebrisSpawn > DEBRIS_SPAWN_INTERVAL){
       obstacles.push(new Debris());
@@ -728,7 +728,7 @@
     animationFrameId = requestAnimationFrame(gameLoop);
   }
 
-  // Radar grid drawing
+  
   function drawRadarGrid(){
     ctx.strokeStyle = 'rgba(57,255,20,0.15)';
     ctx.lineWidth = 1;
@@ -754,10 +754,10 @@
     ctx.stroke();
   }
 
-  // Initialize nation & difficulty selection variables
+  
   let screens = [mainMenu, historyBriefing, timeline, gameScreen, missionFailed, victoryScreen];
 
-  // Start on main menu
+  
   setActiveScreen(mainMenu);
 
 })();
